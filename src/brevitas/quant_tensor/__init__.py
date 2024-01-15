@@ -228,6 +228,19 @@ class QuantTensor(QuantTensorBase):
 
     def flatten(self, *args, **kwargs):
         return self.set(value=self.value.flatten(*args, **kwargs))
+    
+    def chunk(self, *args, **kwargs):
+        chunks = self.value.chunk(*args, **kwargs)
+        scales = [self.scale for i in chunks]
+        if self.scale is not None and len(self.value.shape) == len(self.scale.shape):
+            scales = self.scale.chunk(*args, **kwargs)
+        zero_points = [self.zero_point for i in chunks]
+        if self.zero_point is not None and len(self.value.shape) == len(self.zero_point.shape):
+            zero_points = self.zero_point.chunk(*args, **kwargs)
+        bit_widths = [self.bit_width for i in chunks]
+        if self.bit_width is not None and len(self.value.shape) == len(self.bit_width.shape):
+            bit_widths = self.bit_width.chunk(*args, **kwargs)
+        return list(map(lambda c,s,z,b: self.set(value=c, scale=s, zero_point=z, bit_width=b), chunks, scales, zero_points, bit_widths))
 
     def transpose(self, *args, **kwargs):
         value = self.value.transpose(*args, **kwargs)
